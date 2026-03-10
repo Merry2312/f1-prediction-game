@@ -72,6 +72,64 @@ export interface JolpicaConstructorsResponse {
   }
 }
 
+export interface JolpicaResultDriver {
+  driverId: string
+  code?: string
+  givenName: string
+  familyName: string
+}
+
+export interface JolpicaResultConstructor {
+  constructorId: string
+  name: string
+}
+
+export interface JolpicaRaceResult {
+  position: string
+  Driver: JolpicaResultDriver
+  Constructor: JolpicaResultConstructor
+}
+
+export interface JolpicaQualifyingResult {
+  position: string
+  Driver: JolpicaResultDriver
+}
+
+export interface JolpicaConstructorStanding {
+  position: string
+  Constructor: JolpicaResultConstructor
+}
+
+export interface JolpicaRaceResultsResponse {
+  MRData: {
+    RaceTable: {
+      Races: Array<{
+        Results: JolpicaRaceResult[]
+      }>
+    }
+  }
+}
+
+export interface JolpicaQualifyingResponse {
+  MRData: {
+    RaceTable: {
+      Races: Array<{
+        QualifyingResults: JolpicaQualifyingResult[]
+      }>
+    }
+  }
+}
+
+export interface JolpicaConstructorStandingsResponse {
+  MRData: {
+    StandingsTable: {
+      StandingsLists: Array<{
+        ConstructorStandings: JolpicaConstructorStanding[]
+      }>
+    }
+  }
+}
+
 // Supabase types
 
 export interface Prediction {

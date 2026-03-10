@@ -5,6 +5,12 @@ import type {
   JolpicaDriver,
   JolpicaConstructorsResponse,
   JolpicaConstructor,
+  JolpicaRaceResultsResponse,
+  JolpicaRaceResult,
+  JolpicaQualifyingResponse,
+  JolpicaQualifyingResult,
+  JolpicaConstructorStandingsResponse,
+  JolpicaConstructorStanding,
 } from '../types'
 
 export const CURRENT_SEASON = 2026
@@ -30,4 +36,19 @@ export async function fetchDrivers(): Promise<JolpicaDriver[]> {
 export async function fetchConstructors(): Promise<JolpicaConstructor[]> {
   const data = await jolpicaFetch<JolpicaConstructorsResponse>(`/${CURRENT_SEASON}/constructors.json`)
   return data.MRData.ConstructorTable.Constructors
+}
+
+export async function fetchRaceResults(round: number): Promise<JolpicaRaceResult[]> {
+  const data = await jolpicaFetch<JolpicaRaceResultsResponse>(`/${CURRENT_SEASON}/${round}/results.json`)
+  return data.MRData.RaceTable.Races[0]?.Results ?? []
+}
+
+export async function fetchQualifyingResults(round: number): Promise<JolpicaQualifyingResult[]> {
+  const data = await jolpicaFetch<JolpicaQualifyingResponse>(`/${CURRENT_SEASON}/${round}/qualifying.json`)
+  return data.MRData.RaceTable.Races[0]?.QualifyingResults ?? []
+}
+
+export async function fetchConstructorStandings(round: number): Promise<JolpicaConstructorStanding[]> {
+  const data = await jolpicaFetch<JolpicaConstructorStandingsResponse>(`/${CURRENT_SEASON}/${round}/constructorStandings.json`)
+  return data.MRData.StandingsTable.StandingsLists[0]?.ConstructorStandings ?? []
 }

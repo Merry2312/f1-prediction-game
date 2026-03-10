@@ -5,6 +5,7 @@ import { Register } from './pages/Register'
 import { Home } from './pages/Home'
 import { Schedule } from './pages/Schedule'
 import { Race } from './pages/Race'
+import { Admin } from './pages/Admin'
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/schedule" element={<Schedule />} />
         <Route path="/race/:round" element={<Race />} />
+        <Route path="/admin/score/:round" element={<Admin />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

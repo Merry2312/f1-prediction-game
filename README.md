@@ -29,6 +29,7 @@ npm install
 ```
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJ...
+VITE_ADMIN_USER_ID=your-supabase-user-uuid
 ```
 
 4. Run the following SQL in the Supabase SQL editor to create the required tables:
@@ -88,6 +89,19 @@ create policy "Users can insert own predictions" on predictions for insert to au
 create policy "Users can update own unlocked predictions" on predictions for update to authenticated using (auth.uid() = user_id and locked = false);
 
 create policy "Anyone authenticated can view scores" on scores for select to authenticated using (true);
+
+-- Admin policies (replace the UUID with your admin user's UUID from Supabase Auth)
+create policy "Admin can view all predictions" on predictions
+  for select to authenticated
+  using (auth.uid() = 'your-admin-uuid');
+
+create policy "Admin can insert scores" on scores
+  for insert to authenticated
+  with check (auth.uid() = 'your-admin-uuid');
+
+create policy "Admin can update scores" on scores
+  for update to authenticated
+  using (auth.uid() = 'your-admin-uuid');
 ```
 
 ### 3. Run the dev server
