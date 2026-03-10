@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { NavBar } from '../components/NavBar'
 import { useSchedule } from '../hooks/useRace'
+import { useAuth } from '../hooks/useAuth'
 import { CURRENT_SEASON } from '../lib/jolpica'
 import type { JolpicaRace } from '../types'
 
@@ -25,6 +26,8 @@ function formatDate(date: string, time?: string): string {
 
 export function Schedule() {
   const { data: races, isLoading, isError } = useSchedule()
+  const { user } = useAuth()
+  const isAdmin = !!user && user.id === import.meta.env.VITE_ADMIN_USER_ID
 
   // Mark the first upcoming race as "next"
   let foundNext = false
@@ -91,6 +94,14 @@ export function Schedule() {
                   )}
                 </div>
               </Link>
+              {isAdmin && status === 'past' && (
+                <Link
+                  to={`/admin/score/${race.round}`}
+                  className="mt-1 ml-10 inline-block text-xs text-yellow-400 hover:text-yellow-300 transition-colors"
+                >
+                  Score round {race.round} →
+                </Link>
+              )}
               </li>
             ))}
           </ol>
