@@ -23,11 +23,11 @@
 https://api.jolpi.ca/ergast/f1/
 ```
 All endpoints return JSON. No key needed. Example:
-- Season schedule: `GET /2025.json`
-- Race results: `GET /2025/5/results.json`
-- Qualifying results: `GET /2025/5/qualifying.json`
-- Driver list: `GET /2025/drivers.json`
-- Constructor list: `GET /2025/constructors.json`
+- Season schedule: `GET /2026.json`
+- Race results: `GET /2026/5/results.json`
+- Qualifying results: `GET /2026/5/qualifying.json`
+- Driver list: `GET /2026/drivers.json`
+- Constructor list: `GET /2026/constructors.json`
 
 ---
 
@@ -63,7 +63,7 @@ created_at  timestamptz
 id                  uuid (primary key, default gen_random_uuid())
 user_id             uuid (references profiles.id)
 race_round          int  (Jolpica round number, e.g. 5)
-season              int  (e.g. 2025)
+season              int  (e.g. 2026)
 pole_driver_id      text (Jolpica driverId, e.g. "max_verstappen")
 p1_driver_id        text
 p2_driver_id        text
@@ -141,12 +141,12 @@ Tasks:
 
 Tasks:
 1. Create `src/api/jolpica.ts` with fetch helpers
-2. Fetch season schedule: `GET https://api.jolpi.ca/ergast/f1/2025.json`
+2. Fetch season schedule: `GET https://api.jolpi.ca/ergast/f1/2026.json`
 3. Build `/schedule` page with race cards: name, circuit, country, date
 4. Show race status badge: Upcoming / This Week / Completed
 5. Clicking a race navigates to `/race/:round`
 
-**Verify:** Schedule page loads with all 2025 races. Dates are correct. Status badges reflect today's date accurately.
+**Verify:** Schedule page loads with all 2026 races. Dates are correct. Status badges reflect today's date accurately.
 
 ---
 
@@ -154,8 +154,8 @@ Tasks:
 **Goal:** Populate dropdowns for the prediction form.
 
 Tasks:
-1. Fetch current season drivers: `GET /2025/drivers.json`
-2. Fetch current season constructors: `GET /2025/constructors.json`
+1. Fetch current season drivers: `GET /2026/drivers.json`
+2. Fetch current season constructors: `GET /2026/constructors.json`
 3. Cache both in React Query with a long stale time (they rarely change)
 4. Build reusable `<DriverSelect>` and `<ConstructorSelect>` components
 
@@ -191,9 +191,9 @@ Tasks:
 1. Create Supabase `scores` table
 2. Build an admin-only page `/admin/score/:round` (protect with a check on your user ID)
 3. On this page, fetch race results from Jolpica:
-   - Results: `GET /2025/:round/results.json`
-   - Qualifying: `GET /2025/:round/qualifying.json`
-   - Constructor standings: `GET /2025/:round/constructorStandings.json`
+   - Results: `GET /2026/:round/results.json`
+   - Qualifying: `GET /2026/:round/qualifying.json`
+   - Constructor standings: `GET /2026/:round/constructorStandings.json`
 4. For each user's prediction for this round:
    - Compare each field against the real result
    - Calculate total_points

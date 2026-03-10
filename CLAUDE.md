@@ -144,12 +144,12 @@ No authentication required. Returns JSON.
 
 | Data | Endpoint |
 |---|---|
-| Season schedule | `GET /2025.json` |
-| All drivers (season) | `GET /2025/drivers.json` |
-| All constructors (season) | `GET /2025/constructors.json` |
-| Race results | `GET /2025/{round}/results.json` |
-| Qualifying results | `GET /2025/{round}/qualifying.json` |
-| Constructor standings after round | `GET /2025/{round}/constructorStandings.json` |
+| Season schedule | `GET /2026.json` |
+| All drivers (season) | `GET /2026/drivers.json` |
+| All constructors (season) | `GET /2026/constructors.json` |
+| Race results | `GET /2026/{round}/results.json` |
+| Qualifying results | `GET /2026/{round}/qualifying.json` |
+| Constructor standings after round | `GET /2026/{round}/constructorStandings.json` |
 
 Driver IDs are strings like `"max_verstappen"`, `"leclerc"`, `"hamilton"`.  
 Constructor IDs are strings like `"red_bull"`, `"ferrari"`, `"mercedes"`.
@@ -201,4 +201,4 @@ Work through phases in order. Each phase should be committed and verified before
 - This is a free-tier project. Do not introduce any paid services or APIs.
 - The Jolpica API has no SLA — add sensible error states for when it's slow or down.
 - Keep the admin scoring flow simple — it runs once per race weekend, manual trigger is fine.
-- The current season year (2025) should be a constant, not hardcoded throughout the codebase. Define it once in `src/lib/jolpica.ts`.
+- The current season year (2026) should be a constant, not hardcoded throughout the codebase. Define it once in `src/lib/jolpica.ts`.

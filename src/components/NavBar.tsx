@@ -28,8 +28,11 @@ export function NavBar() {
       <Link to="/" className="text-red-500 font-bold text-xl tracking-tight">
         F1 Predictions
       </Link>
-      <div className="flex items-center gap-4">
-        {username && <span className="text-gray-300 text-sm">{username}</span>}
+      <div className="flex items-center gap-6">
+        <Link to="/schedule" className="text-gray-300 hover:text-white text-sm transition-colors">
+          Schedule
+        </Link>
+        {username && <span className="text-gray-400 text-sm">{username}</span>}
         <button
           onClick={handleSignOut}
           className="bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2 rounded transition-colors"
