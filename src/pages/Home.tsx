@@ -15,8 +15,8 @@ export function Home() {
   return (
     <div className="min-h-screen bg-gray-950">
       <NavBar />
-      <main className="max-w-4xl mx-auto px-6 py-12">
-        <h1 className="text-white text-4xl font-bold mb-4">Welcome to F1 Predictions</h1>
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        <h1 className="text-white text-3xl sm:text-4xl font-bold mb-4">Welcome to F1 Predictions</h1>
         <p className="text-gray-400 text-lg mb-10">
           Predict race outcomes, score points, and climb the leaderboard.
         </p>

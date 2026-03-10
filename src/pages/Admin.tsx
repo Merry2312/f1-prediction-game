@@ -67,7 +67,9 @@ export function Admin() {
       const p2DriverId = raceResults.find(r => r.position === '2')?.Driver.driverId ?? null
       const p3DriverId = raceResults.find(r => r.position === '3')?.Driver.driverId ?? null
       const topConstructorId = constructorStandings[0]?.Constructor.constructorId ?? null
-      const actualFinishers = raceResults.filter(r => r.position !== null).length
+      // Count classified finishers: positionText is a number (not "R", "D", "E", "W" etc.)
+      const actualFinishers = raceResults.filter(r => /^\d+$/.test(r.positionText)).length
+      addLog(`Statuses: ${[...new Set(raceResults.map(r => r.positionText))].join(', ')}`)
 
       addLog(`Pole: ${poleDriverId}`)
       addLog(`P1: ${p1DriverId} | P2: ${p2DriverId} | P3: ${p3DriverId}`)

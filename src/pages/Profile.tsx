@@ -63,7 +63,7 @@ export function Profile() {
   return (
     <div className="min-h-screen bg-gray-950">
       <NavBar />
-      <main className="max-w-2xl mx-auto px-6 py-10">
+      <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {isLoading && (
           <div className="flex justify-center py-20">

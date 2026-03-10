@@ -86,6 +86,8 @@ export interface JolpicaResultConstructor {
 
 export interface JolpicaRaceResult {
   position: string
+  positionText: string  // numeric "1"-"20" for classified; "R"=retired, "D"=DSQ, "E"=excluded, "W"=withdrawn
+  status: string        // "Finished", "+1 Lap", "+2 Laps", "Accident", "Engine", etc.
   Driver: JolpicaResultDriver
   Constructor: JolpicaResultConstructor
 }
