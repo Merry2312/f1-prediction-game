@@ -4,6 +4,7 @@ import { Login } from './pages/Login'
 import { Register } from './pages/Register'
 import { Home } from './pages/Home'
 import { Schedule } from './pages/Schedule'
+import { Race } from './pages/Race'
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<Home />} />
         <Route path="/schedule" element={<Schedule />} />
+        <Route path="/race/:round" element={<Race />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

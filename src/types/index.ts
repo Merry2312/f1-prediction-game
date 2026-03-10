@@ -71,3 +71,20 @@ export interface JolpicaConstructorsResponse {
     }
   }
 }
+
+// Supabase types
+
+export interface Prediction {
+  id: string
+  user_id: string
+  race_round: number
+  season: number
+  pole_driver_id: string
+  p1_driver_id: string
+  p2_driver_id: string
+  p3_driver_id: string
+  top_constructor_id: string
+  finishers_count: number
+  submitted_at: string
+  locked: boolean
+}

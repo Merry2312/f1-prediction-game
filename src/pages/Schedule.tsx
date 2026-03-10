@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { NavBar } from '../components/NavBar'
 import { useSchedule } from '../hooks/useRace'
 import { CURRENT_SEASON } from '../lib/jolpica'
@@ -58,11 +59,12 @@ export function Schedule() {
         {racesWithStatus && (
           <ol className="space-y-3">
             {racesWithStatus.map(({ race, status }) => (
-              <li
-                key={race.round}
-                className={`flex items-center gap-4 rounded-xl px-5 py-4 border transition-colors ${
+              <li key={race.round}>
+              <Link
+                to={`/race/${race.round}`}
+                className={`flex items-center gap-4 rounded-xl px-5 py-4 border transition-colors hover:border-gray-600 ${
                   status === 'next'
-                    ? 'bg-red-600/10 border-red-500'
+                    ? 'bg-red-600/10 border-red-500 hover:border-red-400'
                     : status === 'past'
                     ? 'bg-gray-900 border-gray-800 opacity-60'
                     : 'bg-gray-900 border-gray-800'
@@ -88,6 +90,7 @@ export function Schedule() {
                     <span className="text-gray-600 text-xs uppercase tracking-wide">Completed</span>
                   )}
                 </div>
+              </Link>
               </li>
             ))}
           </ol>
