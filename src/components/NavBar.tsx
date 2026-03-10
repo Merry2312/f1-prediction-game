@@ -32,7 +32,14 @@ export function NavBar() {
         <Link to="/schedule" className="text-gray-300 hover:text-white text-sm transition-colors">
           Schedule
         </Link>
-        {username && <span className="text-gray-400 text-sm">{username}</span>}
+        <Link to="/leaderboard" className="text-gray-300 hover:text-white text-sm transition-colors">
+          Leaderboard
+        </Link>
+        {user && (
+          <Link to={`/profile/${user.id}`} className="text-gray-300 hover:text-white text-sm transition-colors">
+            {username ?? 'Profile'}
+          </Link>
+        )}
         <button
           onClick={handleSignOut}
           className="bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2 rounded transition-colors"

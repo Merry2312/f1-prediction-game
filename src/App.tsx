@@ -6,6 +6,8 @@ import { Home } from './pages/Home'
 import { Schedule } from './pages/Schedule'
 import { Race } from './pages/Race'
 import { Admin } from './pages/Admin'
+import { Leaderboard } from './pages/Leaderboard'
+import { Profile } from './pages/Profile'
 
 function App() {
   return (
@@ -17,6 +19,8 @@ function App() {
         <Route path="/schedule" element={<Schedule />} />
         <Route path="/race/:round" element={<Race />} />
         <Route path="/admin/score/:round" element={<Admin />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/profile/:userId" element={<Profile />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

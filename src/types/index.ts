@@ -146,3 +146,18 @@ export interface Prediction {
   submitted_at: string
   locked: boolean
 }
+
+export interface Score {
+  id: string
+  user_id: string
+  race_round: number
+  season: number
+  pole_correct: boolean | null
+  p1_correct: boolean | null
+  p2_correct: boolean | null
+  p3_correct: boolean | null
+  constructor_correct: boolean | null
+  finishers_correct: boolean | null
+  total_points: number
+  calculated_at: string
+}
