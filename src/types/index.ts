@@ -39,3 +39,35 @@ export interface JolpicaScheduleResponse {
     }
   }
 }
+
+export interface JolpicaDriver {
+  driverId: string
+  code?: string
+  givenName: string
+  familyName: string
+  nationality: string
+}
+
+export interface JolpicaConstructor {
+  constructorId: string
+  name: string
+  nationality: string
+}
+
+export interface JolpicaDriversResponse {
+  MRData: {
+    DriverTable: {
+      season: string
+      Drivers: JolpicaDriver[]
+    }
+  }
+}
+
+export interface JolpicaConstructorsResponse {
+  MRData: {
+    ConstructorTable: {
+      season: string
+      Constructors: JolpicaConstructor[]
+    }
+  }
+}
