@@ -49,64 +49,112 @@ export function Profile() {
   if (!userId) return <Navigate to="/" replace />
 
   const isOwnProfile = user?.id === userId
-
   const totalPoints = data?.scores.reduce((sum, s) => sum + (s.total_points ?? 0), 0) ?? 0
-
-  // Accuracy per category (only scored races)
   const scoredCount = data?.scores.length ?? 0
+  const bestRound = scoredCount > 0 ? Math.max(...data!.scores.map(s => s.total_points ?? 0)) : 0
   const accuracy = scoredCount === 0 ? null : SCORE_FIELDS.map(f => ({
     label: f.label,
     correct: data!.scores.filter(s => s[f.key] === true).length,
     total: scoredCount,
   }))
 
+  const initial = data?.username?.[0].toUpperCase() ?? '?'
+
   return (
-    <div className="min-h-screen bg-gray-950">
+    <div className="min-h-screen bg-f1-black">
       <NavBar />
-      <main className="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <main className="max-w-[1200px] mx-auto px-4 sm:px-8 py-8">
 
         {isLoading && (
           <div className="flex justify-center py-20">
-            <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-4 border-f1-red border-t-transparent rounded-full animate-spin" />
           </div>
         )}
 
         {isError && (
-          <div className="bg-red-900/30 border border-red-700 rounded-lg p-4 text-red-300">
+          <div className="bg-f1-red/10 border border-f1-red/30 rounded-lg p-4 text-f1-text text-[14px]">
             Failed to load profile.
           </div>
         )}
 
         {data && (
           <>
-            <div className="mb-8">
-              <h1 className="text-white text-3xl font-bold">{data.username}</h1>
-              {isOwnProfile && <p className="text-gray-500 text-sm mt-1">Your profile</p>}
-              <p className="text-red-400 text-xl font-bold mt-2">{totalPoints} pts total</p>
+            {/* Profile header */}
+            <div className="flex items-center gap-5 mb-8">
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center font-condensed font-black text-[28px] text-white shrink-0"
+                style={{ background: 'linear-gradient(135deg, #E8002D, #ff6b6b)' }}
+              >
+                {initial}
+              </div>
+              <div>
+                <div className="flex items-center gap-3">
+                  <h1 className="font-condensed font-black text-[36px] uppercase tracking-tight leading-none text-f1-text">
+                    {data.username}
+                  </h1>
+                  {isOwnProfile && (
+                    <span className="font-condensed font-bold text-[11px] tracking-widest uppercase text-f1-red bg-f1-red/10 border border-f1-red/25 px-2.5 py-1 rounded">
+                      You
+                    </span>
+                  )}
+                </div>
+                <p className="font-condensed font-bold text-[22px] text-f1-red mt-0.5">
+                  {totalPoints} pts total
+                </p>
+              </div>
             </div>
 
+            {/* Stats row */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+              {[
+                { label: 'Total Points', value: totalPoints, sub: `${CURRENT_SEASON} season` },
+                { label: 'Races Scored', value: scoredCount, sub: 'competed' },
+                { label: 'Best Round', value: bestRound, sub: 'highest score', color: '#00C851' },
+                { label: 'Avg / Race', value: scoredCount > 0 ? Math.round(totalPoints / scoredCount) : 0, sub: 'points average' },
+              ].map(({ label, value, sub, color }) => (
+                <div key={label} className="bg-f1-panel border border-f1-border rounded-lg p-5 relative overflow-hidden">
+                  <div className="absolute bottom-0 left-0 h-[2px] w-2/5 bg-f1-red" />
+                  <p className="font-condensed font-bold text-[11px] tracking-widest uppercase text-f1-muted mb-2">{label}</p>
+                  <p className="font-condensed font-black text-[34px] leading-none" style={color ? { color } : {}}>
+                    {value}
+                  </p>
+                  <p className="text-[12px] text-f1-dim mt-1">{sub}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Accuracy grid */}
             {accuracy && (
-              <div className="bg-gray-900 border border-gray-800 rounded-xl px-5 py-4 mb-8">
-                <h2 className="text-white font-semibold mb-3">Accuracy</h2>
-                <div className="grid grid-cols-3 gap-3">
+              <div className="bg-f1-panel border border-f1-border rounded-lg p-6 mb-8">
+                <h2 className="font-condensed font-bold text-[16px] tracking-widest uppercase text-f1-dim mb-4 flex items-center gap-3">
+                  Accuracy by Category
+                  <span className="flex-1 h-px bg-f1-border" />
+                </h2>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
                   {accuracy.map(({ label, correct, total }) => (
                     <div key={label} className="text-center">
-                      <p className="text-white font-bold text-lg">{Math.round((correct / total) * 100)}%</p>
-                      <p className="text-gray-500 text-xs">{label}</p>
-                      <p className="text-gray-600 text-xs">{correct}/{total}</p>
+                      <p className="font-condensed font-black text-[22px] text-f1-text">
+                        {Math.round((correct / total) * 100)}%
+                      </p>
+                      <p className="font-condensed font-bold text-[11px] uppercase tracking-wide text-f1-muted mt-0.5">{label}</p>
+                      <p className="font-mono text-[11px] text-f1-muted mt-0.5">{correct}/{total}</p>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            <h2 className="text-white font-semibold mb-3">Race history</h2>
+            {/* Race history */}
+            <h2 className="font-condensed font-bold text-[16px] tracking-widest uppercase text-f1-dim mb-4 flex items-center gap-3">
+              Race History
+              <span className="flex-1 h-px bg-f1-border" />
+            </h2>
 
             {data.predictions.length === 0 && (
-              <p className="text-gray-500">No predictions submitted yet.</p>
+              <p className="text-f1-muted text-[14px]">No predictions submitted yet.</p>
             )}
 
-            <div className="space-y-3">
+            <div className="flex flex-col gap-3 pb-10">
               {data.predictions
                 .sort((a, b) => a.race_round - b.race_round)
                 .map(pred => {
@@ -117,19 +165,26 @@ export function Profile() {
                     <Link
                       key={pred.race_round}
                       to={`/race/${pred.race_round}`}
-                      className="block bg-gray-900 border border-gray-800 hover:border-gray-600 rounded-xl px-5 py-4 transition-colors"
+                      className="bg-f1-panel border border-f1-border hover:border-f1-bright rounded-lg px-5 py-4 transition-colors group"
                     >
                       <div className="flex items-center justify-between mb-3">
                         <div>
-                          <p className="text-white font-semibold">
+                          <p className="font-condensed font-bold text-[11px] tracking-widest uppercase text-f1-muted">
+                            Round {pred.race_round}
+                          </p>
+                          <p className="font-condensed font-extrabold text-[18px] uppercase tracking-tight text-f1-text">
                             {race?.raceName ?? `Round ${pred.race_round}`}
                           </p>
-                          <p className="text-gray-500 text-xs">Round {pred.race_round}</p>
                         </div>
                         {score ? (
-                          <span className="text-white font-bold text-lg">{score.total_points} pts</span>
+                          <div className="text-right">
+                            <span className="font-condensed font-black text-[24px] text-f1-red">{score.total_points}</span>
+                            <span className="font-condensed text-[12px] text-f1-muted ml-1">/40 pts</span>
+                          </div>
                         ) : (
-                          <span className="text-gray-600 text-sm">Not scored</span>
+                          <span className="font-condensed font-semibold text-[12px] uppercase tracking-wide text-f1-muted">
+                            Not scored
+                          </span>
                         )}
                       </div>
 
@@ -138,15 +193,16 @@ export function Profile() {
                           {SCORE_FIELDS.map(f => (
                             <span
                               key={f.key}
-                              className={`text-xs px-2 py-0.5 rounded-full ${
+                              className={`font-condensed font-bold text-[11px] tracking-wide uppercase px-2.5 py-1 rounded flex items-center gap-1 border ${
                                 score[f.key] === true
-                                  ? 'bg-green-900/50 text-green-400'
+                                  ? 'bg-f1-green/12 text-f1-green border-f1-green/25'
                                   : score[f.key] === false
-                                  ? 'bg-red-900/50 text-red-400'
-                                  : 'bg-gray-800 text-gray-500'
+                                  ? 'bg-f1-red/10 text-[#ff4d6d] border-f1-red/20'
+                                  : 'bg-f1-black text-f1-muted border-f1-border'
                               }`}
                             >
-                              {f.label} {score[f.key] === true ? `+${f.points}` : score[f.key] === false ? '✗' : '—'}
+                              {score[f.key] === true ? '✓' : score[f.key] === false ? '✗' : '—'}
+                              {' '}{f.label}
                             </span>
                           ))}
                         </div>

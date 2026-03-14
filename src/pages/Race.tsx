@@ -1,5 +1,5 @@
 import { useState, useEffect, type FormEvent } from 'react'
-import { useParams, Navigate } from 'react-router-dom'
+import { useParams, Navigate, Link } from 'react-router-dom'
 import { NavBar } from '../components/NavBar'
 import { DriverSelect } from '../components/DriverSelect'
 import { ConstructorSelect } from '../components/ConstructorSelect'
@@ -16,24 +16,48 @@ function isRaceLocked(qualifying?: JolpicaSession, raceDate?: string): boolean {
       : new Date(`${qualifying.date}T00:00:00Z`)
     return Date.now() >= qualTime.getTime()
   }
-  // Fallback to race date if qualifying data is missing
-  if (raceDate) {
-    return Date.now() >= new Date(`${raceDate}T00:00:00Z`).getTime()
-  }
+  if (raceDate) return Date.now() >= new Date(`${raceDate}T00:00:00Z`).getTime()
   return false
 }
 
-function formatSession(date: string, time?: string): string {
+function useLockCountdown(qualifying?: JolpicaSession, raceDate?: string) {
+  const getTarget = () => {
+    if (qualifying?.date) {
+      return qualifying.time
+        ? new Date(`${qualifying.date}T${qualifying.time}`)
+        : new Date(`${qualifying.date}T00:00:00Z`)
+    }
+    if (raceDate) return new Date(`${raceDate}T00:00:00Z`)
+    return null
+  }
+
+  const [diff, setDiff] = useState<number>(() => {
+    const t = getTarget()
+    return t ? t.getTime() - Date.now() : 0
+  })
+
+  useEffect(() => {
+    const t = getTarget()
+    if (!t) return
+    const id = setInterval(() => setDiff(t.getTime() - Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [qualifying, raceDate])
+
+  if (diff <= 0) return null
+  const days = Math.floor(diff / 86400000)
+  const hours = Math.floor((diff % 86400000) / 3600000)
+  const mins = Math.floor((diff % 3600000) / 60000)
+  if (days > 0) return `${days}d ${hours}h ${mins}m`
+  if (hours > 0) return `${hours}h ${mins}m`
+  return `${mins}m`
+}
+
+function formatLockDate(date: string, time?: string): string {
   const d = time ? new Date(`${date}T${time}`) : new Date(`${date}T00:00:00Z`)
   return d.toLocaleDateString('en-GB', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZoneName: 'short',
-  })
+    weekday: 'short', day: 'numeric', month: 'short',
+    hour: '2-digit', minute: '2-digit', timeZone: 'UTC',
+  }) + ' UTC'
 }
 
 export function Race() {
@@ -44,6 +68,7 @@ export function Race() {
   const { data: races, isLoading: scheduleLoading } = useSchedule()
   const race = races?.find(r => r.round === round)
   const locked = race ? isRaceLocked(race.Qualifying, race.date) : false
+  const countdown = useLockCountdown(race?.Qualifying, race?.date)
 
   const { data: existing, isLoading: predictionLoading } = usePrediction(user?.id, roundNum)
   const { mutate: upsert, isPending, isSuccess, error: saveError } = useUpsertPrediction()
@@ -55,7 +80,6 @@ export function Race() {
   const [constructor, setConstructor] = useState('')
   const [finishers, setFinishers] = useState<number | ''>('')
 
-  // Pre-fill form when existing prediction loads
   useEffect(() => {
     if (existing) {
       setPole(existing.pole_driver_id)
@@ -70,11 +94,11 @@ export function Race() {
   if (!round || isNaN(roundNum)) return <Navigate to="/schedule" replace />
 
   const isLoading = scheduleLoading || predictionLoading
+  const formDisabled = locked || isPending
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
     if (!user || !pole || !p1 || !p2 || !p3 || !constructor || finishers === '') return
-
     upsert({
       user_id: user.id,
       race_round: roundNum,
@@ -87,150 +111,216 @@ export function Race() {
     })
   }
 
-  const formDisabled = locked || isPending
-
   return (
-    <div className="min-h-screen bg-gray-950">
+    <div className="min-h-screen bg-f1-black">
       <NavBar />
-      <main className="max-w-xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <main className="max-w-[1200px] mx-auto px-4 sm:px-8 py-8">
 
         {isLoading && (
           <div className="flex justify-center py-20">
-            <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-8 h-8 border-4 border-f1-red border-t-transparent rounded-full animate-spin" />
           </div>
         )}
 
         {!isLoading && !race && (
-          <p className="text-gray-400">Race not found.</p>
+          <p className="text-f1-dim text-[14px]">Race not found.</p>
         )}
 
         {!isLoading && race && (
           <>
-            <div className="mb-8">
-              <p className="text-gray-500 text-sm uppercase tracking-wide mb-1">
-                Round {race.round} · {CURRENT_SEASON}
-              </p>
-              <h1 className="text-white text-3xl font-bold mb-1">{race.raceName}</h1>
-              <p className="text-gray-400">
-                {race.Circuit.circuitName} · {race.Circuit.Location.locality}, {race.Circuit.Location.country}
-              </p>
-              <p className="text-gray-500 text-sm mt-1">Race: {formatSession(race.date, race.time)}</p>
-              {race.Qualifying && (
-                <p className="text-gray-500 text-sm">Qualifying: {formatSession(race.Qualifying.date, race.Qualifying.time)}</p>
-              )}
+            <div className="mb-5">
+              <Link
+                to="/schedule"
+                className="font-condensed font-semibold text-[12px] tracking-widest uppercase text-f1-muted hover:text-f1-dim transition-colors border border-f1-border px-3 py-1.5 rounded inline-flex items-center gap-1"
+              >
+                ← Schedule
+              </Link>
             </div>
 
-            {locked ? (
-              <div className="bg-yellow-900/20 border border-yellow-700 rounded-lg px-4 py-3 text-yellow-400 text-sm mb-6 flex items-center gap-2">
-                <span>🔒</span>
-                <span>Predictions are locked — qualifying has started.</span>
+            {/* Race hero */}
+            <div className="bg-f1-panel border border-f1-border border-b-0 rounded-t-lg px-8 py-7 flex flex-col sm:flex-row justify-between items-start gap-6">
+              <div>
+                <p className="font-condensed font-bold text-[12px] tracking-widest uppercase text-f1-red mb-2">
+                  Round {race.round} · {CURRENT_SEASON} Season
+                </p>
+                <h1 className="font-condensed font-black text-[40px] sm:text-[44px] uppercase tracking-tight leading-none text-f1-text">
+                  {race.raceName}
+                </h1>
+                <p className="font-condensed font-semibold text-[15px] uppercase tracking-wide text-f1-dim mt-2">
+                  {race.Circuit.circuitName} · {race.Circuit.Location.locality}, {race.Circuit.Location.country}
+                </p>
               </div>
-            ) : (
-              <div className="bg-green-900/20 border border-green-700 rounded-lg px-4 py-3 text-green-400 text-sm mb-6">
-                Predictions open — locks at qualifying start
-                {race.Qualifying ? `: ${formatSession(race.Qualifying.date, race.Qualifying.time)}` : '.'}.
-              </div>
-            )}
 
-            {locked && existing ? (
-              // Read-only view of submitted prediction
-              <div className="bg-gray-900 rounded-xl p-6 space-y-3">
-                <h2 className="text-white font-semibold mb-4">Your prediction</h2>
-                {[
-                  { label: 'Pole position', value: existing.pole_driver_id },
-                  { label: 'P1 winner', value: existing.p1_driver_id },
-                  { label: 'P2', value: existing.p2_driver_id },
-                  { label: 'P3', value: existing.p3_driver_id },
-                  { label: 'Top constructor', value: existing.top_constructor_id },
-                  { label: 'Finishers', value: String(existing.finishers_count) },
-                ].map(({ label, value }) => (
-                  <div key={label} className="flex justify-between text-sm">
-                    <span className="text-gray-400">{label}</span>
-                    <span className="text-white font-medium">{value}</span>
+              <div className="text-left sm:text-right shrink-0">
+                {!locked && countdown && (
+                  <>
+                    <p className="font-condensed text-[11px] tracking-widest uppercase text-f1-muted mb-2">
+                      Predictions lock in
+                    </p>
+                    <div
+                      className="font-mono text-[13px] text-f1-red px-3.5 py-2 rounded border inline-flex items-center gap-2"
+                      style={{ background: 'rgba(232,0,45,0.10)', borderColor: 'rgba(232,0,45,0.20)' }}
+                    >
+                      🔒 {countdown}
+                    </div>
+                    {race.Qualifying && (
+                      <p className="font-mono text-[12px] text-f1-muted mt-2">
+                        {formatLockDate(race.Qualifying.date, race.Qualifying.time)}
+                      </p>
+                    )}
+                  </>
+                )}
+                {locked && (
+                  <div
+                    className="font-condensed font-bold text-[12px] tracking-widest uppercase text-f1-gold px-3.5 py-2 rounded border inline-flex items-center gap-2"
+                    style={{ background: 'rgba(255,215,0,0.08)', borderColor: 'rgba(255,215,0,0.2)' }}
+                  >
+                    🔒 Predictions Locked
                   </div>
-                ))}
+                )}
               </div>
-            ) : locked && !existing ? (
-              <p className="text-gray-500">You didn't submit a prediction for this race.</p>
-            ) : (
-              // Editable prediction form
-              <form onSubmit={handleSubmit} className="bg-gray-900 rounded-xl p-6 space-y-4">
-                <h2 className="text-white font-semibold mb-2">
-                  {existing ? 'Update your prediction' : 'Submit your prediction'}
-                </h2>
+            </div>
 
-                <DriverSelect
-                  id="pole"
-                  label="Pole position"
-                  value={pole}
-                  onChange={setPole}
-                  disabled={formDisabled}
-                />
-                <DriverSelect
-                  id="p1"
-                  label="P1 winner"
-                  value={p1}
-                  onChange={setP1}
-                  disabled={formDisabled}
-                  exclude={[p2, p3].filter(Boolean)}
-                />
-                <DriverSelect
-                  id="p2"
-                  label="P2"
-                  value={p2}
-                  onChange={setP2}
-                  disabled={formDisabled}
-                  exclude={[p1, p3].filter(Boolean)}
-                />
-                <DriverSelect
-                  id="p3"
-                  label="P3"
-                  value={p3}
-                  onChange={setP3}
-                  disabled={formDisabled}
-                  exclude={[p1, p2].filter(Boolean)}
-                />
-                <ConstructorSelect
-                  id="constructor"
-                  label="Top constructor"
-                  value={constructor}
-                  onChange={setConstructor}
-                  disabled={formDisabled}
-                />
+            {/* Form panel */}
+            <div className="bg-f1-panel border border-f1-border border-t-0 rounded-b-lg px-8 py-8">
 
-                <div>
-                  <label htmlFor="finishers" className="block text-gray-300 text-sm mb-1">
-                    Number of finishers (0–22)
-                  </label>
-                  <input
-                    id="finishers"
-                    type="number"
-                    min={0}
-                    max={22}
-                    value={finishers}
-                    onChange={e => setFinishers(e.target.value === '' ? '' : Number(e.target.value))}
-                    disabled={formDisabled}
-                    required
-                    className="w-full bg-gray-800 text-white rounded-lg px-3 py-2 text-sm border border-gray-700 focus:outline-none focus:border-red-500 disabled:opacity-50"
-                  />
-                </div>
+              {locked && existing ? (
+                /* Read-only locked view */
+                <>
+                  <div className="mb-6">
+                    <h2 className="font-condensed font-extrabold text-[18px] uppercase tracking-wide text-f1-text mb-1">
+                      Your Prediction
+                    </h2>
+                    <p className="text-[13px] text-f1-muted">Qualifying has started — predictions are locked.</p>
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {[
+                      { label: '🏆 Pole Position', value: existing.pole_driver_id, pts: 5 },
+                      { label: '🏗 Top Constructor', value: existing.top_constructor_id, pts: 8 },
+                      { label: '🥇 P1 Winner', value: existing.p1_driver_id, pts: 10 },
+                      { label: '🥈 P2', value: existing.p2_driver_id, pts: 7 },
+                      { label: '🥉 P3', value: existing.p3_driver_id, pts: 5 },
+                      { label: '🏁 Finishers', value: String(existing.finishers_count), pts: 5 },
+                    ].map(({ label, value, pts }) => (
+                      <div key={label} className="bg-f1-black border border-f1-border rounded-[5px] px-4 py-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="font-condensed font-bold text-[11px] tracking-widest uppercase text-f1-dim">{label}</span>
+                          <span className="font-mono text-[10px] text-f1-muted bg-f1-panel border border-f1-border px-1.5 py-0.5 rounded">{pts} pts</span>
+                        </div>
+                        <span className="font-sans font-medium text-[14px] text-f1-text">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : locked && !existing ? (
+                <p className="text-f1-muted text-[14px]">You didn't submit a prediction for this race.</p>
+              ) : (
+                /* Editable form */
+                <form onSubmit={handleSubmit}>
+                  <div className="mb-6">
+                    <h2 className="font-condensed font-extrabold text-[18px] uppercase tracking-wide text-f1-text mb-1">
+                      {existing ? 'Update Your Prediction' : 'Your Prediction'}
+                    </h2>
+                    <p className="text-[13px] text-f1-muted">
+                      All predictions are scored binary — correct or incorrect. Max 40 pts this race.
+                    </p>
+                  </div>
 
-                {saveError && (
-                  <p className="text-red-400 text-sm">{(saveError as Error).message}</p>
-                )}
-                {isSuccess && (
-                  <p className="text-green-400 text-sm">Prediction saved!</p>
-                )}
+                  <div className="grid sm:grid-cols-2 gap-5 mb-6">
+                    <DriverSelect
+                      id="pole"
+                      label="🏆 Pole Position"
+                      value={pole}
+                      onChange={setPole}
+                      disabled={formDisabled}
+                      pts={5}
+                    />
+                    <ConstructorSelect
+                      id="constructor"
+                      label="🏗 Top Constructor"
+                      value={constructor}
+                      onChange={setConstructor}
+                      disabled={formDisabled}
+                      pts={8}
+                    />
 
-                <button
-                  type="submit"
-                  disabled={formDisabled || !pole || !p1 || !p2 || !p3 || !constructor || finishers === ''}
-                  className="w-full bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-semibold py-2 rounded-lg transition-colors"
-                >
-                  {isPending ? 'Saving…' : existing ? 'Update prediction' : 'Submit prediction'}
-                </button>
-              </form>
-            )}
+                    {/* Podium group */}
+                    <div className="sm:col-span-2 bg-f1-black border border-f1-border rounded-lg p-5 flex flex-col gap-4">
+                      <p className="font-condensed font-bold text-[12px] tracking-widest uppercase text-f1-muted">
+                        Podium Predictions · P1=10pts · P2=7pts · P3=5pts
+                      </p>
+                      {[
+                        { pos: 'P1', driver: p1, setter: setP1, exclude: [p2, p3], label: 'P1 Winner', pts: 10, medalBg: 'rgba(255,215,0,0.15)', medalColor: '#FFD700', medalBorder: 'rgba(255,215,0,0.3)' },
+                        { pos: 'P2', driver: p2, setter: setP2, exclude: [p1, p3], label: 'P2', pts: 7, medalBg: 'rgba(192,192,192,0.1)', medalColor: '#C0C0C0', medalBorder: 'rgba(192,192,192,0.2)' },
+                        { pos: 'P3', driver: p3, setter: setP3, exclude: [p1, p2], label: 'P3', pts: 5, medalBg: 'rgba(205,127,50,0.12)', medalColor: '#CD7F32', medalBorder: 'rgba(205,127,50,0.25)' },
+                      ].map(({ pos, driver, setter, exclude, label, pts, medalBg, medalColor, medalBorder }) => (
+                        <div key={pos} className="flex items-center gap-3.5">
+                          <div
+                            className="w-9 h-9 rounded-full flex items-center justify-center font-condensed font-black text-[14px] shrink-0 border"
+                            style={{ background: medalBg, color: medalColor, borderColor: medalBorder }}
+                          >
+                            {pos}
+                          </div>
+                          <div className="flex-1">
+                            <DriverSelect
+                              id={pos.toLowerCase()}
+                              label={label}
+                              value={driver}
+                              onChange={setter}
+                              disabled={formDisabled}
+                              exclude={exclude.filter(Boolean)}
+                              pts={pts}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Finishers */}
+                    <div className="sm:col-span-2 flex flex-col gap-2">
+                      <label htmlFor="finishers" className="flex items-center gap-2 font-condensed font-bold text-[11px] tracking-widest uppercase text-f1-dim">
+                        🏁 Number of Cars that Finish
+                        <span className="font-mono text-[10px] text-f1-muted bg-f1-black border border-f1-border px-1.5 py-0.5 rounded">5 pts</span>
+                      </label>
+                      <div className="flex items-center gap-4">
+                        <input
+                          id="finishers"
+                          type="number"
+                          min={0}
+                          max={22}
+                          value={finishers}
+                          onChange={e => setFinishers(e.target.value === '' ? '' : Number(e.target.value))}
+                          disabled={formDisabled}
+                          required
+                          className="bg-f1-black border border-f1-bright rounded-[5px] text-f1-text font-mono text-[16px] font-semibold px-3.5 py-2.5 outline-none focus:border-f1-red transition-colors disabled:opacity-50 w-28"
+                        />
+                        <span className="text-[13px] text-f1-muted">Enter a number between 0 and 22</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {saveError && (
+                    <p className="text-[#FF6B6B] text-[13px] mb-4">{(saveError as Error).message}</p>
+                  )}
+                  {isSuccess && (
+                    <p className="text-f1-green text-[13px] mb-4">✓ Prediction saved!</p>
+                  )}
+
+                  <div className="flex items-center justify-between pt-5 border-t border-f1-border">
+                    <p className="text-[12px] text-f1-muted flex items-center gap-1.5">
+                      🔒 Locks automatically at qualifying start · Update anytime before then
+                    </p>
+                    <button
+                      type="submit"
+                      disabled={formDisabled || !pole || !p1 || !p2 || !p3 || !constructor || finishers === ''}
+                      className="bg-f1-red hover:brightness-110 disabled:opacity-40 text-white font-condensed font-bold text-[14px] tracking-widest uppercase px-8 py-3 rounded-[5px] transition-all"
+                    >
+                      {isPending ? 'Saving…' : existing ? 'Update →' : 'Save Prediction →'}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
           </>
         )}
       </main>
