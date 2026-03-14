@@ -7,15 +7,23 @@ import { useSchedule } from '../hooks/useRace'
 import { usePrediction, useUpsertPrediction } from '../hooks/usePrediction'
 import { useAuth } from '../hooks/useAuth'
 import { CURRENT_SEASON } from '../lib/jolpica'
+import type { JolpicaSession } from '../types'
 
-function isRaceLocked(date: string, time?: string): boolean {
-  const raceTime = time
-    ? new Date(`${date}T${time}`)
-    : new Date(`${date}T00:00:00Z`)
-  return Date.now() >= raceTime.getTime()
+function isRaceLocked(qualifying?: JolpicaSession, raceDate?: string): boolean {
+  if (qualifying?.date) {
+    const qualTime = qualifying.time
+      ? new Date(`${qualifying.date}T${qualifying.time}`)
+      : new Date(`${qualifying.date}T00:00:00Z`)
+    return Date.now() >= qualTime.getTime()
+  }
+  // Fallback to race date if qualifying data is missing
+  if (raceDate) {
+    return Date.now() >= new Date(`${raceDate}T00:00:00Z`).getTime()
+  }
+  return false
 }
 
-function formatRaceDate(date: string, time?: string): string {
+function formatSession(date: string, time?: string): string {
   const d = time ? new Date(`${date}T${time}`) : new Date(`${date}T00:00:00Z`)
   return d.toLocaleDateString('en-GB', {
     weekday: 'long',
@@ -35,7 +43,7 @@ export function Race() {
 
   const { data: races, isLoading: scheduleLoading } = useSchedule()
   const race = races?.find(r => r.round === round)
-  const locked = race ? isRaceLocked(race.date, race.time) : false
+  const locked = race ? isRaceLocked(race.Qualifying, race.date) : false
 
   const { data: existing, isLoading: predictionLoading } = usePrediction(user?.id, roundNum)
   const { mutate: upsert, isPending, isSuccess, error: saveError } = useUpsertPrediction()
@@ -106,16 +114,21 @@ export function Race() {
               <p className="text-gray-400">
                 {race.Circuit.circuitName} · {race.Circuit.Location.locality}, {race.Circuit.Location.country}
               </p>
-              <p className="text-gray-500 text-sm mt-1">{formatRaceDate(race.date, race.time)}</p>
+              <p className="text-gray-500 text-sm mt-1">Race: {formatSession(race.date, race.time)}</p>
+              {race.Qualifying && (
+                <p className="text-gray-500 text-sm">Qualifying: {formatSession(race.Qualifying.date, race.Qualifying.time)}</p>
+              )}
             </div>
 
             {locked ? (
-              <div className="bg-yellow-900/20 border border-yellow-700 rounded-lg px-4 py-3 text-yellow-400 text-sm mb-6">
-                Predictions are locked — this race has started.
+              <div className="bg-yellow-900/20 border border-yellow-700 rounded-lg px-4 py-3 text-yellow-400 text-sm mb-6 flex items-center gap-2">
+                <span>🔒</span>
+                <span>Predictions are locked — qualifying has started.</span>
               </div>
             ) : (
               <div className="bg-green-900/20 border border-green-700 rounded-lg px-4 py-3 text-green-400 text-sm mb-6">
-                Predictions open — locks at race start.
+                Predictions open — locks at qualifying start
+                {race.Qualifying ? `: ${formatSession(race.Qualifying.date, race.Qualifying.time)}` : '.'}.
               </div>
             )}
 
