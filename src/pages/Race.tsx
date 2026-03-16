@@ -7,7 +7,7 @@ import { useSchedule } from '../hooks/useRace'
 import { usePrediction, useUpsertPrediction } from '../hooks/usePrediction'
 import { useAuth } from '../hooks/useAuth'
 import { CURRENT_SEASON } from '../lib/jolpica'
-import type { JolpicaSession } from '../types'
+import type { JolpicaRace, JolpicaSession } from '../types'
 
 function isRaceLocked(qualifying?: JolpicaSession, raceDate?: string): boolean {
   if (qualifying?.date) {
@@ -52,12 +52,45 @@ function useLockCountdown(qualifying?: JolpicaSession, raceDate?: string) {
   return `${mins}m`
 }
 
+function localTz(d: Date): string {
+  const offset = -d.getTimezoneOffset()
+  const sign = offset >= 0 ? '+' : '-'
+  const h = Math.floor(Math.abs(offset) / 60)
+  const m = Math.abs(offset) % 60
+  return `GMT${sign}${h}${m ? `:${String(m).padStart(2, '0')}` : ''}`
+}
+
 function formatLockDate(date: string, time?: string): string {
   const d = time ? new Date(`${date}T${time}`) : new Date(`${date}T00:00:00Z`)
-  return d.toLocaleDateString('en-GB', {
-    weekday: 'short', day: 'numeric', month: 'short',
-    hour: '2-digit', minute: '2-digit', timeZone: 'UTC',
-  }) + ' UTC'
+  const day = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+  const t = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  return `${day} · ${t} ${localTz(d)}`
+}
+
+function buildSessions(race: JolpicaRace): { label: string; session: JolpicaSession }[] {
+  const isSprint = !!race.Sprint
+  const sessions: { label: string; session: JolpicaSession }[] = []
+  if (race.FirstPractice) sessions.push({ label: 'Practice 1', session: race.FirstPractice })
+  if (isSprint) {
+    if (race.SprintQualifying) sessions.push({ label: 'Sprint Quali', session: race.SprintQualifying })
+    if (race.Sprint) sessions.push({ label: 'Sprint Race', session: race.Sprint })
+  } else {
+    if (race.SecondPractice) sessions.push({ label: 'Practice 2', session: race.SecondPractice })
+    if (race.ThirdPractice) sessions.push({ label: 'Practice 3', session: race.ThirdPractice })
+  }
+  if (race.Qualifying) sessions.push({ label: 'Qualifying', session: race.Qualifying })
+  sessions.push({ label: 'Race', session: { date: race.date, time: race.time } })
+  return sessions
+}
+
+function formatSessionDate(date: string, time?: string): string {
+  const d = time ? new Date(`${date}T${time}`) : new Date(`${date}T00:00:00Z`)
+  return d.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' })
+}
+
+function formatSessionTime(date: string, time: string): string {
+  const d = new Date(`${date}T${time}`)
+  return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + ' ' + localTz(d)
 }
 
 export function Race() {
@@ -138,20 +171,22 @@ export function Race() {
             </div>
 
             {/* Race hero */}
-            <div className="bg-f1-panel border border-f1-border border-b-0 rounded-t-lg px-8 py-7 flex flex-col sm:flex-row justify-between items-start gap-6">
-              <div>
+            <div className="bg-f1-panel border border-f1-border border-b-0 rounded-t-lg px-4 sm:px-8 py-5 sm:py-7 flex flex-col sm:flex-row justify-between items-start gap-4 sm:gap-6">
+              <div className="min-w-0">
                 <p className="font-condensed font-bold text-[12px] tracking-widest uppercase text-f1-red mb-2">
                   Round {race.round} · {CURRENT_SEASON} Season
                 </p>
-                <h1 className="font-condensed font-black text-[40px] sm:text-[44px] uppercase tracking-tight leading-none text-f1-text">
+                <h1 className="font-condensed font-black text-[28px] sm:text-[44px] uppercase tracking-tight leading-none text-f1-text">
                   {race.raceName}
                 </h1>
-                <p className="font-condensed font-semibold text-[15px] uppercase tracking-wide text-f1-dim mt-2">
-                  {race.Circuit.circuitName} · {race.Circuit.Location.locality}, {race.Circuit.Location.country}
+                <p className="font-condensed font-semibold text-[13px] sm:text-[15px] uppercase tracking-wide text-f1-dim mt-2 leading-snug">
+                  {race.Circuit.circuitName}<br className="sm:hidden" />
+                  <span className="hidden sm:inline"> · </span>
+                  {race.Circuit.Location.locality}, {race.Circuit.Location.country}
                 </p>
               </div>
 
-              <div className="text-left sm:text-right shrink-0">
+              <div className="shrink-0">
                 {!locked && countdown && (
                   <>
                     <p className="font-condensed text-[11px] tracking-widest uppercase text-f1-muted mb-2">
@@ -181,8 +216,62 @@ export function Race() {
               </div>
             </div>
 
+            {/* Weekend schedule strip */}
+            {(() => {
+              const sessions = buildSessions(race)
+              const isSprint = !!race.Sprint
+              return (
+                <div className="bg-f1-black/60 border-x border-b border-f1-border px-4 sm:px-8 py-4 sm:py-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <p className="font-condensed font-bold text-[11px] tracking-widest uppercase text-f1-muted">
+                      Weekend Schedule
+                    </p>
+                    {isSprint && (
+                      <span className="font-condensed font-bold text-[9px] tracking-widest uppercase px-1.5 py-0.5 rounded border bg-f1-gold/10 text-f1-gold border-f1-gold/30">
+                        Sprint Weekend
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                    {sessions.map(({ label, session }) => {
+                      const isRace = label === 'Race'
+                      const isSp = label.startsWith('Sprint')
+                      return (
+                        <div
+                          key={label}
+                          className={`rounded-lg border px-3 py-2.5 flex flex-col gap-1 ${
+                            isRace
+                              ? 'border-f1-red/40 bg-f1-red/5'
+                              : isSp
+                              ? 'border-f1-gold/30 bg-f1-gold/5'
+                              : 'border-f1-border bg-f1-black/40'
+                          }`}
+                        >
+                          <span className={`font-condensed font-bold text-[10px] tracking-widest uppercase ${
+                            isRace ? 'text-f1-red' : isSp ? 'text-f1-gold' : 'text-f1-dim'
+                          }`}>
+                            {label}
+                          </span>
+                          <span className="font-mono text-[11px] text-f1-muted leading-tight">
+                            {formatSessionDate(session.date, session.time)}
+                          </span>
+                          {session.time && (
+                            <span className={`font-mono text-[12px] font-semibold leading-tight ${
+                              isRace ? 'text-f1-red' : isSp ? 'text-f1-gold' : 'text-f1-text'
+                            }`}>
+                              {formatSessionTime(session.date, session.time)}
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })()}
+
             {/* Form panel */}
-            <div className="bg-f1-panel border border-f1-border border-t-0 rounded-b-lg px-8 py-8">
+            <div className="bg-f1-panel border border-f1-border border-t-0 rounded-b-lg px-4 sm:px-8 py-6 sm:py-8">
 
               {locked && existing ? (
                 /* Read-only locked view */
@@ -306,14 +395,14 @@ export function Race() {
                     <p className="text-f1-green text-[13px] mb-4">✓ Prediction saved!</p>
                   )}
 
-                  <div className="flex items-center justify-between pt-5 border-t border-f1-border">
-                    <p className="text-[12px] text-f1-muted flex items-center gap-1.5">
-                      🔒 Locks automatically at qualifying start · Update anytime before then
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-5 border-t border-f1-border">
+                    <p className="text-[12px] text-f1-muted">
+                      🔒 Locks at qualifying start · Update anytime before then
                     </p>
                     <button
                       type="submit"
                       disabled={formDisabled || !pole || !p1 || !p2 || !p3 || !constructor || finishers === ''}
-                      className="bg-f1-red hover:brightness-110 disabled:opacity-40 text-white font-condensed font-bold text-[14px] tracking-widest uppercase px-8 py-3 rounded-[5px] transition-all"
+                      className="bg-f1-red hover:brightness-110 disabled:opacity-40 text-white font-condensed font-bold text-[14px] tracking-widest uppercase px-8 py-3 rounded-[5px] transition-all w-full sm:w-auto"
                     >
                       {isPending ? 'Saving…' : existing ? 'Update →' : 'Save Prediction →'}
                     </button>

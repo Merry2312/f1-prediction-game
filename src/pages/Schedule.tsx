@@ -30,13 +30,19 @@ function raceStatus(race: JolpicaRace): 'past' | 'next' | 'upcoming' {
 
 function formatRaceDate(date: string, time?: string): string {
   const d = time ? new Date(`${date}T${time}`) : new Date(`${date}T00:00:00Z`)
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' })
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
 function formatRaceTime(date: string, time?: string): string {
   if (!time) return ''
   const d = new Date(`${date}T${time}`)
-  return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) + ' UTC'
+  const timeStr = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  const offset = -d.getTimezoneOffset()
+  const sign = offset >= 0 ? '+' : '-'
+  const hours = Math.floor(Math.abs(offset) / 60)
+  const minutes = Math.abs(offset) % 60
+  const tz = `GMT${sign}${hours}${minutes ? `:${String(minutes).padStart(2, '0')}` : ''}`
+  return `${timeStr} ${tz}`
 }
 
 export function Schedule() {
@@ -63,7 +69,7 @@ export function Schedule() {
       <main className="max-w-[1200px] mx-auto px-4 sm:px-8">
         {/* Page header */}
         <div className="pt-10 pb-8 border-b border-f1-border mb-8">
-          <h1 className="font-condensed font-black text-[40px] uppercase tracking-tight leading-none text-f1-text">
+          <h1 className="font-condensed font-black text-[28px] sm:text-[40px] uppercase tracking-tight leading-none text-f1-text">
             {CURRENT_SEASON} Season Schedule
           </h1>
           <p className="text-f1-dim text-[14px] mt-1.5">
@@ -89,7 +95,7 @@ export function Schedule() {
               <div key={race.round}>
                 <Link
                   to={`/race/${race.round}`}
-                  className={`group flex items-center gap-5 rounded-lg px-6 py-4 border transition-all duration-150 relative overflow-hidden ${
+                  className={`group flex items-center gap-3 sm:gap-5 rounded-lg px-3 sm:px-6 py-3 sm:py-4 border transition-all duration-150 relative overflow-hidden ${
                     status === 'next'
                       ? 'bg-f1-panel border-f1-red'
                       : status === 'past'
@@ -103,7 +109,7 @@ export function Schedule() {
                   }`} />
 
                   {/* Round number */}
-                  <span className={`font-condensed font-black text-[28px] w-10 text-center shrink-0 ${
+                  <span className={`font-condensed font-black text-[22px] sm:text-[28px] w-8 sm:w-10 text-center shrink-0 ${
                     status === 'next' ? 'text-f1-red' : 'text-f1-muted'
                   }`}>
                     {String(race.round).padStart(2, '0')}
@@ -111,15 +117,27 @@ export function Schedule() {
 
                   {/* Race info */}
                   <div className="flex-1 min-w-0">
-                    <p className="font-condensed font-extrabold text-[20px] uppercase tracking-tight text-f1-text truncate">
-                      {race.raceName}
-                    </p>
-                    <p className="font-condensed font-medium text-[13px] uppercase tracking-wide text-f1-dim mt-0.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <p className="font-condensed font-extrabold text-[16px] sm:text-[20px] uppercase tracking-tight text-f1-text truncate">
+                        {race.raceName}
+                      </p>
+                      {race.Sprint && (
+                        <span className="font-condensed font-bold text-[9px] tracking-widest uppercase px-1.5 py-0.5 rounded border bg-f1-gold/10 text-f1-gold border-f1-gold/30 shrink-0">
+                          Sprint
+                        </span>
+                      )}
+                    </div>
+                    <p className="font-condensed font-medium text-[12px] sm:text-[13px] uppercase tracking-wide text-f1-dim mt-0.5 truncate">
                       {getFlag(race.Circuit.Location.country)} {race.Circuit.circuitName}
+                    </p>
+                    {/* Date shown inline on mobile */}
+                    <p className="font-mono text-[11px] text-f1-muted mt-0.5 sm:hidden">
+                      {formatRaceDate(race.date, race.time)}
+                      {race.time && <span className={`ml-1.5 ${status === 'next' ? 'text-f1-red' : ''}`}>{formatRaceTime(race.date, race.time)}</span>}
                     </p>
                   </div>
 
-                  {/* Date */}
+                  {/* Date — desktop only */}
                   <div className="text-right shrink-0 hidden sm:block">
                     <p className="font-mono text-[13px] text-f1-dim">{formatRaceDate(race.date, race.time)}</p>
                     {race.time && (
@@ -129,8 +147,8 @@ export function Schedule() {
                     )}
                   </div>
 
-                  {/* Status badge */}
-                  <div className="shrink-0">
+                  {/* Status badge — desktop only */}
+                  <div className="shrink-0 hidden sm:block">
                     {status === 'next' && (
                       <span className="font-condensed font-bold text-[11px] tracking-widest uppercase px-3 py-1.5 rounded border bg-f1-red/15 text-f1-red border-f1-red/30">
                         🔴 This Week
@@ -151,17 +169,17 @@ export function Schedule() {
                   {/* Action button */}
                   <div className="shrink-0">
                     {status === 'next' && (
-                      <span className="font-condensed font-bold text-[11px] tracking-widest uppercase px-3.5 py-1.5 rounded bg-f1-red text-white">
+                      <span className="font-condensed font-bold text-[11px] tracking-widest uppercase px-2.5 sm:px-3.5 py-1.5 rounded bg-f1-red text-white">
                         Predict
                       </span>
                     )}
                     {status === 'past' && (
-                      <span className="font-condensed font-bold text-[11px] tracking-widest uppercase px-3.5 py-1.5 rounded border border-f1-bright text-f1-dim">
+                      <span className="font-condensed font-bold text-[11px] tracking-widest uppercase px-2.5 sm:px-3.5 py-1.5 rounded border border-f1-bright text-f1-dim">
                         Results
                       </span>
                     )}
                     {status === 'upcoming' && (
-                      <span className="font-condensed font-bold text-[11px] tracking-widest uppercase px-3.5 py-1.5 rounded border border-f1-border text-f1-muted opacity-40 cursor-not-allowed">
+                      <span className="font-condensed font-bold text-[11px] tracking-widest uppercase px-2.5 sm:px-3.5 py-1.5 rounded border border-f1-border text-f1-muted opacity-40 cursor-not-allowed">
                         Predict
                       </span>
                     )}
